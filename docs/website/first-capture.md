@@ -24,6 +24,8 @@ curl --proxy http://127.0.0.1:17890 http://example.com
 
 This command sends a real request to example.com. Replace the proxy port if you changed it in Snurpo. The listener binds to localhost; it is not a proxy exposed to your whole network.
 
+In Windows PowerShell 5.1, use `curl.exe` in place of `curl` to call the cURL executable.
+
 Select the new exchange and compare what your client sent with what the server returned. For encrypted traffic, continue with [HTTPS setup](https.md).
 
 ## Keep the investigation readable
