@@ -1,4 +1,13 @@
-# Snurpo 1.5.0
+# Snurpo status
+
+## Snurpo 1.5.1
+
+The 1.5.1 source waits for complete request details before enabling Copy as cURL
+or Compose replay and applies status filters to the full selected session.
+See the [release notes](docs/releases/1.5.1.md) and
+[published downloads](https://github.com/dalkedev/snurpo/releases/latest).
+
+## Snurpo 1.5.0
 
 Snurpo 1.5.0 adds **Copy as cURL** to the request inspector. Preview a captured
 request, review its credentials, then explicitly copy a command for sh, bash or

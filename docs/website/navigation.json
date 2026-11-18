@@ -1,6 +1,6 @@
 {
-  "version": "Snurpo 1.5.0",
-  "updated": "2026-11-12",
+  "version": "Snurpo 1.5.1",
+  "updated": "2026-11-18",
   "pages": [
     { "slug": "", "source": "introduction.md", "title": "Introduction", "description": "Follow a request from local capture to useful evidence.", "group": "Start here" },
     { "slug": "installation", "source": "installation.md", "title": "Install Snurpo", "description": "Choose a verified release asset and understand platform support.", "group": "Start here" },
@@ -15,6 +15,6 @@
     { "slug": "android", "source": "android.md", "title": "Android, experimental", "description": "Choose a device proxy or supported Frida workflow and restore owned state.", "group": "Connect and automate" },
     { "slug": "har-compare-ci", "source": "har-compare-ci.md", "title": "HAR comparison and CI", "description": "Compare saved HARs offline and interpret clean, regression and invalid results.", "group": "Connect and automate" },
     { "slug": "troubleshooting", "source": "troubleshooting.md", "title": "Troubleshooting", "description": "Identify the failing connection, trust, capture or permission step.", "group": "Reference" },
-    { "slug": "releases", "source": "releases.md", "title": "Releases and compatibility", "description": "Understand version 1.5.0, tested platforms and preserved Scope identifiers.", "group": "Reference" }
+    { "slug": "releases", "source": "releases.md", "title": "Releases and compatibility", "description": "Understand version 1.5.1, tested platforms and preserved Scope identifiers.", "group": "Reference" }
   ]
 }

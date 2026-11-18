@@ -1,6 +1,6 @@
 {
   "name": "snurpo-desktop",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Snurpo: a nosy little HTTP debugger with persistent sessions, Android instrumentation and MCP",
   "license": "AGPL-3.0-or-later",
   "repository": {
@@ -24,6 +24,7 @@
     "desktop": "node scripts/desktop.mjs dev",
     "desktop:build": "tauri build",
     "package": "node scripts/desktop.mjs build",
+    "audit:ci": "node --test scripts/audit-npm.test.mjs && node scripts/audit-npm.mjs",
     "test:ui": "vitest run",
     "test:ui:watch": "vitest",
     "test": "vitest"

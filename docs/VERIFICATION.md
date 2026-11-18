@@ -1,5 +1,16 @@
 # Recorded verification
 
+## Snurpo 1.5.1 preparation: 2026-11-18
+
+- 93 UI tests cover request detail loading, retry, older matching traffic and
+  pagination. The production frontend build passes on Node 26.13.1.
+- 110 Rust tests pass on macOS Apple Silicon. The opt-in archive measurement
+  remains skipped. Coverage includes cursor ordering at equal timestamps and
+  pagination beyond 1,000 rows.
+- The maintainer proposal records hosted checks for the release commit. The
+  GitHub release carries checksums and platform build manifests for the packaged
+  artifacts. See the [release process](RELEASING.md) for platform coverage.
+
 ## Snurpo 1.4.2 preparation: 2026-11-12
 
 Version consistency, native package checks, the clean screenshot gallery and

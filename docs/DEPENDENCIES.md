@@ -42,6 +42,23 @@ schema/WAL and independently checked 1.4.0 archive compatibility are recorded in
 
 These records describe a point-in-time automated check, not a security audit. Re-run the tools when changing lockfiles and before releases.
 
+## npm audit and the withdrawn picomatch advisory
+
+Checks and release builds run `npm run audit:ci` against the public npm registry,
+including development dependencies. npm can still return
+[GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) after
+GitHub withdrew it. The gate permits that exact report entry for locked
+`picomatch` 4.0.7 only when all findings attributed to it are dev-only and the
+official GitHub API confirms the withdrawal on that run. Other high/critical
+findings, an incomplete report or an unavailable confirmation fail the build.
+
+[CVE-2026-112366](https://www.cve.org/CVERecord?id=CVE-2026-112366) remains
+published. Snurpo uses the affected glob matcher in build and test tooling with
+project-defined patterns. Captured HTTP traffic does not supply those patterns,
+and the dependency is not part of the installed desktop runtime. Remove the
+special handling once npm reflects the withdrawal or an updated lockfile no
+longer includes the affected version.
+
 ## Redistributed license texts
 
 `resources/licenses/index.html`, `rust.json` and `frontend.json` retain the collected license texts, package versions and source locations for Rust runtime dependencies and frontend packages/fonts. They are shipped inside the application resources. The Rust collection includes target-specific dependencies, so it may list packages that are not present in a particular binary.

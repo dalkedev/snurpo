@@ -6,14 +6,14 @@ import { messageOf } from '../form-utils';
 import type { Exchange } from '../types';
 import { InlineError, ModalFrame } from './WorkbenchUi';
 
-export function CurlExport({ exchange }: { exchange: Exchange }) {
+export function CurlExport({ exchange }: { exchange: Exchange | null }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button className="button small" onClick={() => setOpen(true)}>
+      <button className="button small" onClick={() => setOpen(true)} disabled={!exchange}>
         <Terminal size={13} /> Copy as cURL
       </button>
-      {open && <CurlDialog exchange={exchange} onClose={() => setOpen(false)} />}
+      {open && exchange && <CurlDialog exchange={exchange} onClose={() => setOpen(false)} />}
     </>
   );
 }

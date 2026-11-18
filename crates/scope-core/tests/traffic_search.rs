@@ -1,4 +1,4 @@
-use scope_core::{Engine, Session};
+use scope_core::{Engine, Session, TrafficFilter};
 use serde_json::{json, Value};
 
 fn exchange(label: &str, method: &str, url: &str, status: Option<u16>) -> Value {
@@ -567,4 +567,123 @@ fn bounded_queries_do_not_deserialize_rows_after_full_pages_or_for_zero_limit() 
             .unwrap()
             .is_empty());
     }
+}
+
+#[test]
+fn desktop_page_filters_before_limit_and_match_the_existing_lifecycle_rules() {
+    let dir = tempfile::tempdir().unwrap();
+    let engine = Engine::open(dir.path()).unwrap();
+    let mut transport_error = row("transport-error", None);
+    transport_error["error"] = json!("Connection refused");
+    transport_error["requestBody"] = json!("fixture text");
+    let mut edited = row("older-edited", Some(201));
+    edited["edited"] = json!(true);
+    let mut rows = vec![
+        row("older-500", Some(500)),
+        transport_error,
+        edited,
+        row("irrelevant-302", Some(302)),
+    ];
+    rows.extend((0..250).map(|index| row(&format!("success-{index}"), Some(200))));
+    let session = archive(&engine, rows);
+
+    let page = engine
+        .list_exchange_page(&session.id, None, TrafficFilter::Errors, 1, None)
+        .unwrap();
+    assert_eq!(page.rows.len(), 1);
+    assert!(page.rows[0].url.ends_with("/transport-error"));
+    assert_eq!(page.next_cursor.as_deref(), Some(page.rows[0].id.as_str()));
+    assert_eq!(page.rows[0].request_body, "");
+    assert_eq!(
+        engine.get_exchange(&page.rows[0].id).unwrap().request_body,
+        "fixture text"
+    );
+    let second = engine
+        .list_exchange_page(
+            &session.id,
+            None,
+            TrafficFilter::Errors,
+            1,
+            page.next_cursor.as_deref(),
+        )
+        .unwrap();
+    assert_eq!(second.rows.len(), 1);
+    assert!(second.rows[0].url.ends_with("/older-500"));
+    assert_eq!(second.next_cursor, None);
+
+    for (filter, query, path) in [
+        (
+            TrafficFilter::Errors,
+            "filter: body~=fixture",
+            "/transport-error",
+        ),
+        (TrafficFilter::Errors, "older", "/older-500"),
+        (TrafficFilter::Successful, "older", "/older-edited"),
+        (TrafficFilter::Edited, "filter: status=201", "/older-edited"),
+    ] {
+        let page = engine
+            .list_exchange_page(&session.id, Some(query), filter, 1, None)
+            .unwrap();
+        assert_eq!(page.rows.len(), 1);
+        assert!(page.rows[0].url.ends_with(path));
+        assert_eq!(page.next_cursor, None);
+    }
+}
+
+#[test]
+fn desktop_cursor_pages_past_one_thousand_rows_even_with_equal_timestamps() {
+    let dir = tempfile::tempdir().unwrap();
+    let engine = Engine::open(dir.path()).unwrap();
+    let rows = (0..1250)
+        .map(|index| row(&format!("exchange-{index}"), Some(200)))
+        .collect();
+    let session = archive(&engine, rows);
+    let mut cursor = None;
+    let mut paths = Vec::new();
+
+    for page_index in 0..5 {
+        let page = engine
+            .list_exchange_page(
+                &session.id,
+                None,
+                TrafficFilter::All,
+                250,
+                cursor.as_deref(),
+            )
+            .unwrap();
+        assert_eq!(page.rows.len(), 250);
+        assert_eq!(page.next_cursor.is_some(), page_index < 4);
+        paths.extend(
+            page.rows
+                .into_iter()
+                .map(|row| url::Url::parse(&row.url).unwrap().path().to_owned()),
+        );
+        cursor = page.next_cursor;
+    }
+
+    let expected = (0..1250)
+        .rev()
+        .map(|index| format!("/exchange-{index}"))
+        .collect::<Vec<_>>();
+    assert_eq!(paths, expected);
+    let legacy = engine.list_exchanges(&session.id, None, 2, 1248).unwrap();
+    assert!(legacy[0].url.ends_with("/exchange-1"));
+    assert!(legacy[1].url.ends_with("/exchange-0"));
+
+    let first = engine
+        .list_exchange_page(&session.id, None, TrafficFilter::All, 250, None)
+        .unwrap();
+    let other = archive(&engine, vec![row("another-session", Some(200))]);
+    let error = engine
+        .list_exchange_page(
+            &other.id,
+            None,
+            TrafficFilter::All,
+            250,
+            first.next_cursor.as_deref(),
+        )
+        .unwrap_err();
+    assert!(error
+        .to_string()
+        .contains("cursor does not belong to this session"));
 }

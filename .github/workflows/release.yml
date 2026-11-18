@@ -114,7 +114,10 @@ jobs:
       - run: npm test -- --run
       - run: node --test scripts/release.test.mjs
       - run: python -m unittest discover -s resources/device/tests
-      - run: npm audit --audit-level=high
+      - name: Audit npm dependencies
+        run: npm run audit:ci
+        env:
+          SNURPO_ADVISORY_TOKEN: ${{ github.token }}
       - run: npm run package
       - name: Exercise real desktop engine and stdio MCP
         run: node scripts/smoke.mjs

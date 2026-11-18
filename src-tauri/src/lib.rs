@@ -110,6 +110,21 @@ async fn execute(app: &AppCore, command: &str, args: Value) -> Result<Value> {
             }
             value
         }
+        "list_exchange_page" => serde_json::to_value(
+            e.list_exchange_page(
+                string(&args, "sessionId")?,
+                args.get("query").and_then(Value::as_str),
+                args.get("filter")
+                    .map(|filter| serde_json::from_value(filter.clone()))
+                    .transpose()?
+                    .unwrap_or_default(),
+                args.get("limit")
+                    .and_then(Value::as_u64)
+                    .unwrap_or(250)
+                    .clamp(1, 1000) as usize,
+                args.get("before").and_then(Value::as_str),
+            )?,
+        )?,
         "get_exchange" => serde_json::to_value(e.get_exchange(string(&args, "id")?)?)?,
         "analysis" => e.analysis(string(&args, "sessionId")?)?,
         "infer_openapi" => e.infer_openapi(string(&args, "sessionId")?)?,

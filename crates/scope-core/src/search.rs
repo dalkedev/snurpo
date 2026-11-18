@@ -1,10 +1,115 @@
 //! Compiled desktop archive queries. MCP uses its separate sanitized search.
-use crate::Exchange;
-use anyhow::{anyhow, bail, Result};
+use crate::{Engine, Exchange};
+use anyhow::{anyhow, bail, Context, Result};
+use rusqlite::params;
+use serde::{Deserialize, Serialize};
 use url::{Host, Url};
 
 const MAX_QUERY_BYTES: usize = 4096;
 const MAX_TERMS: usize = 32;
+
+#[derive(Clone, Copy, Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TrafficFilter {
+    #[default]
+    All,
+    Successful,
+    Errors,
+    Edited,
+}
+
+impl TrafficFilter {
+    fn matches(self, exchange: &Exchange) -> bool {
+        match self {
+            Self::All => true,
+            Self::Successful => exchange
+                .status
+                .is_some_and(|status| (200..300).contains(&status)),
+            Self::Errors => exchange.completed && has_error(exchange),
+            Self::Edited => exchange.edited,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExchangePage {
+    pub rows: Vec<Exchange>,
+    pub next_cursor: Option<String>,
+}
+
+impl Engine {
+    /// List traffic summaries in archive order, applying both filters before pagination.
+    pub fn list_exchange_page(
+        &self,
+        session_id: &str,
+        query: Option<&str>,
+        filter: TrafficFilter,
+        limit: usize,
+        before: Option<&str>,
+    ) -> Result<ExchangePage> {
+        let db = self.inner.db.lock().unwrap();
+        if !db.query_row(
+            "SELECT EXISTS(SELECT 1 FROM sessions WHERE id=?1)",
+            [session_id],
+            |row| row.get::<_, bool>(0),
+        )? {
+            bail!("Session not found: {session_id}");
+        }
+        let query = Query::parse(query)?;
+        let limit = limit.clamp(1, 1000);
+        let boundary = before
+            .map(|id| {
+                db.query_row(
+                    "SELECT started_at, rowid FROM exchanges WHERE id=?1 AND session_id=?2",
+                    params![id, session_id],
+                    |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)),
+                )
+                .context("Traffic page cursor does not belong to this session")
+            })
+            .transpose()?;
+        let mut statement = db.prepare(if boundary.is_some() {
+            "SELECT data FROM exchanges WHERE session_id=?1 AND (started_at,rowid)<(?2,?3)
+             ORDER BY started_at DESC,rowid DESC"
+        } else {
+            "SELECT data FROM exchanges WHERE session_id=?1 ORDER BY started_at DESC,rowid DESC"
+        })?;
+        let mut entries = match boundary {
+            Some((started_at, row_id)) => {
+                statement.query(params![session_id, started_at, row_id])?
+            }
+            None => statement.query([session_id])?,
+        };
+        let mut page = ExchangePage {
+            rows: Vec::new(),
+            next_cursor: None,
+        };
+        while let Some(entry) = entries.next()? {
+            let mut exchange: Exchange = serde_json::from_str(entry.get_ref(0)?.as_str()?)?;
+            if !filter.matches(&exchange) || !query.matches(&exchange) {
+                continue;
+            }
+            if page.rows.len() == limit {
+                page.next_cursor = page.rows.last().map(|row| row.id.clone());
+                break;
+            }
+            exchange.request_body = String::new();
+            exchange.response_body = String::new();
+            exchange.original_request = None;
+            exchange.original_response = None;
+            page.rows.push(exchange);
+        }
+        Ok(page)
+    }
+}
+
+fn has_error(exchange: &Exchange) -> bool {
+    exchange
+        .error
+        .as_ref()
+        .is_some_and(|error| !error.is_empty())
+        || exchange.status.is_some_and(|status| status >= 400)
+}
 
 pub(crate) enum Query {
     Literal(String),
@@ -219,18 +324,11 @@ impl Predicate {
                     || (!exchange.response_body_base64
                         && exchange.response_body.to_lowercase().contains(needle))
             }
-            Self::State(state) => {
-                let error = exchange
-                    .error
-                    .as_ref()
-                    .is_some_and(|error| !error.is_empty())
-                    || exchange.status.is_some_and(|status| status >= 400);
-                match state {
-                    State::Pending => !exchange.completed,
-                    State::Error => exchange.completed && error,
-                    State::Complete => exchange.completed && !error,
-                }
-            }
+            Self::State(state) => match state {
+                State::Pending => !exchange.completed,
+                State::Error => exchange.completed && has_error(exchange),
+                State::Complete => exchange.completed && !has_error(exchange),
+            },
             Self::Edited(value) => exchange.edited == *value,
         }
     }

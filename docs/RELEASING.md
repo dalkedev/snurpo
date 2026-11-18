@@ -18,8 +18,9 @@ the matching reviewed release notes in `docs/releases/` as the publication body.
 Publication is a separate maintainer action; for a stable release, clear both the draft and
 prerelease flags. Keep historical release assets attached to their original tags.
 
-The first public prerelease, `v0.1.0-alpha.1`, used application version `0.1.0`;
-the current source uses application version `1.5.0` for the Copy as cURL feature.
+The first public prerelease, `v0.1.0-alpha.1`, used application version `0.1.0`.
+Copy as cURL arrived in 1.5.0. The 1.5.1 update corrects request loading and
+traffic pagination.
 Snurpo 1.4.2 was the first release under the new name. **Scope 1.4.1** keeps its
 original `Scope-…` artifact names and
 checksums. Do not move its tag or replace those assets with a renamed build.
@@ -81,7 +82,7 @@ cargo test --workspace --locked
 npm test -- --run
 node --test scripts/release.test.mjs
 python3 -m unittest discover -s resources/device/tests
-npm audit --audit-level=high
+npm run audit:ci
 npm run package
 node scripts/public-resources.mjs .runtime/public-resources
 ```

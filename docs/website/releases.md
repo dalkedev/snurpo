@@ -1,6 +1,10 @@
 # Releases and compatibility
 
-These guides describe **Snurpo 1.5.0**, published on 12 November 2026. Use the [release page](https://github.com/dalkedev/snurpo/releases/tag/v1.5.0) for downloads and checksums, or [all releases](https://github.com/dalkedev/snurpo/releases) for the full history.
+These guides describe **Snurpo 1.5.1**. Use the [release page](https://github.com/dalkedev/snurpo/releases/tag/v1.5.1) for downloads and checksums, or [all releases](https://github.com/dalkedev/snurpo/releases) for the full history.
+
+## What changes in 1.5.1
+
+**Copy as cURL** and **Compose replay** wait for complete request details. The traffic status dropdown and search now both cover the entire selected session, including older records. [Traffic filters](inspect-and-search.md) · [Replay and cURL](replay-curl.md).
 
 ## What 1.5.0 adds
 
@@ -12,13 +16,13 @@ The installed desktop app needs no Node runtime. Source tooling requires Node 26
 
 | Target | Current evidence |
 | --- | --- |
-| macOS Apple Silicon | Native interaction has been exercised. Public ZIP is ad-hoc signed, not Apple-notarized. |
+| macOS Apple Silicon | Public ZIP uses an ad hoc signature. See the release and verification notes for the recorded tests. |
 | Windows x64 | Installer available; CI build/package and headless MCP/capture coverage. Interactive use remains unverified. |
 | Linux x64 | AppImage and Debian package available; CI build/package and headless MCP/capture coverage. Interactive use remains unverified. |
-| Intel macOS / Linux arm64 | No package in the 1.5.0 release. |
+| Intel macOS / Linux arm64 | No package in the 1.5.1 release. |
 | Android / Frida | Experimental coverage for the specific setup described in the [Android guide](android.md). |
 
-The gallery's existing native screenshots record **1.4.2**. They are not screenshots of the 1.5.0 cURL feature. Detailed [verification](https://github.com/dalkedev/snurpo/blob/v1.5.0/docs/VERIFICATION.md) and [dependency records](https://github.com/dalkedev/snurpo/blob/v1.5.0/docs/DEPENDENCIES.md) retain their own dates and limits.
+The site's native gallery includes inspector and replay screenshots from **1.4.2** and a cURL preview from **1.5.0**. Detailed [verification](https://github.com/dalkedev/snurpo/blob/v1.5.1/docs/VERIFICATION.md) and [dependency records](https://github.com/dalkedev/snurpo/blob/v1.5.1/docs/DEPENDENCIES.md) retain their own dates and limits.
 
 ## Scope became Snurpo in 1.4.2
 
