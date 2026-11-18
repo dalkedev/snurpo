@@ -76,6 +76,9 @@ import type {
 
 type View = 'traffic' | 'analysis' | 'compare';
 type Panel = 'device' | 'mcp' | 'connection' | 'rules' | 'activity' | 'diagnostics' | null;
+type ExchangeSelection = { exchange: Exchange } & (
+  { state: 'loading' } | { state: 'failed'; error: string } | { state: 'ready' }
+);
 const initialProxy: ProxyStatus = {
   running: false,
   port: 17890,
@@ -237,7 +240,9 @@ export default function App() {
   const proxyEpoch = useRef(0);
   const [device, setDevice] = useState(initialDevice);
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
-  const [selected, setSelected] = useState<Exchange | null>(null);
+  const [selection, setSelection] = useState<ExchangeSelection | null>(null);
+  const activeSelection = selection?.exchange.sessionId === sessionId ? selection : null;
+  const selected = activeSelection?.exchange;
   const [pending, setPending] = useState<PendingExchange[]>([]);
   const [activePending, setActivePending] = useState<PendingExchange | null>(null);
   const resolvingPending = useRef<string | null>(null);
@@ -346,7 +351,7 @@ export default function App() {
   }, [pendingSignature, activePending?.id]);
   useEffect(() => {
     sessionIdRef.current = sessionId;
-    setSelected(null);
+    setSelection(null);
     setExchanges([]);
     setSearchError('');
     setLimit(250);
@@ -387,7 +392,7 @@ export default function App() {
     };
   }, [view, sessionId, count, revision, native]);
   useEffect(() => {
-    if (!selected || !native) return;
+    if (!selected || activeSelection?.state !== 'ready' || !native) return;
     const summary = exchanges.find((row) => row.id === selected.id);
     if (!summary) return;
     const lifecycle = (row: Exchange) =>
@@ -405,7 +410,10 @@ export default function App() {
     api
       .get_exchange(selected.id)
       .then((full) => {
-        if (alive) setSelected((current) => (current?.id === full.id ? full : current));
+        if (alive)
+          setSelection((current) =>
+            current === activeSelection ? { exchange: full, state: 'ready' } : current,
+          );
       })
       .catch((e) => {
         if (alive) setError(errorText(e));
@@ -511,12 +519,17 @@ export default function App() {
     e.target.value = '';
   }
   async function selectExchange(row: Exchange) {
-    setSelected(row);
+    const loading: ExchangeSelection = { exchange: row, state: 'loading' };
+    setSelection(loading);
     try {
       const full = await api.get_exchange(row.id);
-      setSelected((current) => (current?.id === full.id ? full : current));
+      setSelection((current) =>
+        current === loading ? { exchange: full, state: 'ready' } : current,
+      );
     } catch (e) {
-      setError(errorText(e));
+      setSelection((current) =>
+        current === loading ? { exchange: row, state: 'failed', error: errorText(e) } : current,
+      );
     }
   }
   const filtered = exchanges.filter(
@@ -1146,8 +1159,8 @@ export default function App() {
                           'Try a different search or clear your filters.'
                         ) : (
                           <>
-                            Try six real localhost requests, then inspect their responses.
-                            Or connect your own app. Captured traffic is saved as it arrives.
+                            Try six real localhost requests, then inspect their responses. Or
+                            connect your own app. Captured traffic is saved as it arrives.
                           </>
                         )}
                       </Empty>
@@ -1159,9 +1172,13 @@ export default function App() {
                     )}
                   </div>
                   <RequestInspector
-                    selected={selected}
+                    selection={activeSelection}
+                    onRetry={() => {
+                      if (selected) void selectExchange(selected);
+                    }}
                     onReplay={() => {
-                      if (selected && !replayingId) setReplayDraft(selected);
+                      if (activeSelection?.state === 'ready' && !replayingId)
+                        setReplayDraft(activeSelection.exchange);
                     }}
                     busy={!!busy || !!replayingId}
                   />
@@ -1187,7 +1204,9 @@ export default function App() {
                 onTraffic={() => setView('traffic')}
                 onInspect={(id) =>
                   void perform('inspect', async () => {
-                    setSelected(await api.get_exchange(id));
+                    const full = await api.get_exchange(id);
+                    if (sessionIdRef.current !== full.sessionId) return;
+                    setSelection({ exchange: full, state: 'ready' });
                     setView('traffic');
                   })
                 }
@@ -1270,7 +1289,8 @@ export default function App() {
               .replay(id, edit)
               .then(async (replayed) => {
                 await refreshSessions();
-                if (sessionIdRef.current === replayed.sessionId) setSelected(replayed);
+                if (sessionIdRef.current === replayed.sessionId)
+                  setSelection({ exchange: replayed, state: 'ready' });
                 setNotice('Replay completed. Current traffic rules were applied.');
               })
               .catch((e) => setError(errorText(e)))
@@ -1324,7 +1344,9 @@ export default function App() {
                 void api
                   .get_exchange(item.exchangeId)
                   .then((full) =>
-                    setSelected((current) => (current?.id === full.id ? full : current)),
+                    setSelection((current) =>
+                      current === activeSelection ? { exchange: full, state: 'ready' } : current,
+                    ),
                   )
                   .catch((e) => setError(errorText(e)));
             } finally {
@@ -1338,20 +1360,23 @@ export default function App() {
 }
 
 function RequestInspector({
-  selected,
+  selection,
+  onRetry,
   onReplay,
   busy,
 }: {
-  selected: Exchange | null;
+  selection: ExchangeSelection | null;
+  onRetry: () => void;
   onReplay: () => void;
   busy: boolean;
 }) {
+  const selected = selection?.exchange;
   const [side, setSide] = useState<'request' | 'response'>('response');
   const [tab, setTab] = useState<'body' | 'headers' | 'timing' | 'original'>('body');
   useEffect(() => {
     setTab('body');
   }, [selected?.id]);
-  if (!selected)
+  if (!selection || !selected)
     return (
       <aside className="request-inspector inspector-empty">
         <div className="inspector-label">
@@ -1406,10 +1431,17 @@ function RequestInspector({
         <h3 title={selected.url}>{url.host}</h3>
         <p title={selected.url}>{url.path}</p>
         <div className="request-summary-actions">
-          <button className="button small" onClick={onReplay} disabled={busy}>
+          <button
+            className="button small"
+            onClick={onReplay}
+            disabled={busy || selection.state !== 'ready'}
+          >
             <RotateCcw size={13} /> Compose replay
           </button>
-          <CurlExport key={selected.id} exchange={selected} />
+          <CurlExport
+            key={`${selected.id}:${selection.state === 'ready'}`}
+            exchange={selection.state === 'ready' ? selected : null}
+          />
           <IconButton
             label="Copy request URL"
             onClick={() => void navigator.clipboard.writeText(selected.url)}
@@ -1466,7 +1498,20 @@ function RequestInspector({
         )}
       </div>
       <div className="inspector-content">
-        {tab === 'body' ? (
+        {selection.state === 'loading' ? (
+          <p className="quiet-note" role="status">
+            Loading request details…
+          </p>
+        ) : selection.state === 'failed' ? (
+          <>
+            <p className="quiet-note" role="alert">
+              Could not load request details. {selection.error}
+            </p>
+            <button className="button small" onClick={onRetry}>
+              Retry loading details
+            </button>
+          </>
+        ) : tab === 'body' ? (
           <Body body={body} binary={binary} />
         ) : tab === 'headers' ? (
           <Headers headers={headers} />
