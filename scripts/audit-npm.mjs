@@ -106,9 +106,13 @@ export async function verifyNpmAudit(report, exitStatus, packages, getAdvisory) 
   return { withdrawn: ghsa, high, critical };
 }
 
-async function fetchGithubAdvisory() {
+async function fetchGithubAdvisory(token) {
   const response = await fetch(githubRecord, {
-    headers: { Accept: 'application/vnd.github+json', 'Cache-Control': 'no-cache' },
+    headers: {
+      Accept: 'application/vnd.github+json',
+      'Cache-Control': 'no-cache',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     redirect: 'error',
     signal: AbortSignal.timeout(10_000),
   });
@@ -120,6 +124,7 @@ async function main() {
   const npm = process.env.npm_execpath;
   if (!npm) throw new Error('Run this check with npm run audit:ci.');
   const root = new URL('../', import.meta.url);
+  const { SNURPO_ADVISORY_TOKEN: token, ...npmEnv } = process.env;
   const audit = spawnSync(
     process.execPath,
     [
@@ -134,6 +139,7 @@ async function main() {
     {
       cwd: root,
       encoding: 'utf8',
+      env: npmEnv,
       maxBuffer: 16 * 1024 * 1024,
       timeout: 120_000,
     },
@@ -142,7 +148,9 @@ async function main() {
   const report = JSON.parse(audit.stdout);
   const { packages } = JSON.parse(readFileSync(new URL('package-lock.json', root), 'utf8'));
   try {
-    const result = await verifyNpmAudit(report, audit.status, packages, fetchGithubAdvisory);
+    const result = await verifyNpmAudit(report, audit.status, packages, () =>
+      fetchGithubAdvisory(token),
+    );
     if (result.withdrawn) {
       console.log(
         `npm reported ${result.high} high dev findings attributed only to ${result.withdrawn}.`,
