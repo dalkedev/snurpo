@@ -82,7 +82,7 @@ cargo test --workspace --locked
 npm test -- --run
 node --test scripts/release.test.mjs
 python3 -m unittest discover -s resources/device/tests
-npm audit --audit-level=high
+npm run audit:ci
 npm run package
 node scripts/public-resources.mjs .runtime/public-resources
 ```
