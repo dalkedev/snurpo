@@ -10,6 +10,7 @@ mod search;
 mod sessions;
 
 pub use rules::{AppliedRule, PauseStage, RuleAction, RuleMatcher, TrafficProvenance, TrafficRule};
+pub use search::{ExchangePage, TrafficFilter};
 pub use sessions::{AuditEntry, SessionUpdate};
 
 use anyhow::{anyhow, bail, Context, Result};

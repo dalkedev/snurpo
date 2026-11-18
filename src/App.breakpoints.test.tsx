@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   proxy_status: vi.fn(),
   pending: vi.fn(),
   device_status: vi.fn(),
-  list_exchanges: vi.fn(),
+  list_exchange_page: vi.fn(),
   list_rules: vi.fn(),
   resolve_breakpoint: vi.fn(),
   generate_demo: vi.fn(),
@@ -80,7 +80,7 @@ beforeEach(() => {
   mocks.proxy_status.mockResolvedValue(proxy);
   mocks.device_status.mockResolvedValue(device);
   mocks.pending.mockResolvedValue([pending]);
-  mocks.list_exchanges.mockResolvedValue([]);
+  mocks.list_exchange_page.mockResolvedValue({ rows: [], nextCursor: null });
   mocks.list_rules.mockResolvedValue([]);
   mocks.list_audit.mockResolvedValue([]);
   mocks.resolve_breakpoint.mockResolvedValue(undefined);
@@ -95,6 +95,48 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.useRealTimers();
+});
+
+it('fetches older errors from the archive when the status filter changes', async () => {
+  const olderError: Exchange = {
+    id: 'older-error',
+    sessionId: session.id,
+    method: 'GET',
+    url: 'https://api.example.test/older-error',
+    status: 500,
+    requestHeaders: [],
+    responseHeaders: [],
+    requestBody: '',
+    responseBody: '',
+    requestBodyBase64: false,
+    responseBodyBase64: false,
+    startedAt: 0,
+    durationMs: 1,
+    requestBytes: 0,
+    responseBytes: 0,
+    error: null,
+    edited: false,
+    completed: true,
+  };
+  const latestSuccess = {
+    ...olderError,
+    id: 'latest-success',
+    url: 'https://api.example.test/latest-success',
+    status: 200,
+  };
+  mocks.list_exchange_page
+    .mockResolvedValueOnce({ rows: [latestSuccess], nextCursor: 'latest-success' })
+    .mockResolvedValueOnce({ rows: [olderError], nextCursor: null });
+  await mount();
+  expect(screen.getByRole('row', { name: /latest-success/ })).toBeInTheDocument();
+
+  fireEvent.change(screen.getByLabelText('Filter status'), { target: { value: 'errors' } });
+  expect(screen.queryByText('No matching traffic')).not.toBeInTheDocument();
+  await act(async () => vi.advanceTimersByTime(0));
+  expect(mocks.list_exchange_page).toHaveBeenLastCalledWith(session.id, '', 'errors', 250, null);
+  expect(screen.getByRole('row', { name: /older-error/ })).toBeInTheDocument();
+  expect(screen.queryByRole('row', { name: /latest-success/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Load more requests' })).not.toBeInTheDocument();
 });
 
 describe('Proxy listener settings', () => {
@@ -499,7 +541,7 @@ describe('Request terminal export', () => {
       edited: false,
       completed: true,
     };
-    mocks.list_exchanges.mockResolvedValue([exchange]);
+    mocks.list_exchange_page.mockResolvedValue({ rows: [exchange], nextCursor: null });
     mocks.get_exchange.mockResolvedValue(exchange);
     mocks.pending.mockResolvedValue([]);
     await mount();

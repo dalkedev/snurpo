@@ -45,8 +45,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { api, isNative } from './api';
-import { isExchangeError } from './exchange-utils';
-import { queryTraffic } from './traffic-search';
+import { useTrafficPages } from './traffic-search';
 import { useThemePreference } from './theme';
 import { ExchangeStatus as Status } from './components/ExchangeStatus';
 import { TrafficSearchHelp } from './components/TrafficSearchHelp';
@@ -72,6 +71,7 @@ import type {
   PendingExchange,
   ProxyStatus,
   Session,
+  TrafficFilter,
 } from './types';
 
 type View = 'traffic' | 'analysis' | 'compare';
@@ -239,7 +239,6 @@ export default function App() {
   const [proxyPortDraft, setProxyPortDraft] = useState('17890');
   const proxyEpoch = useRef(0);
   const [device, setDevice] = useState(initialDevice);
-  const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [selection, setSelection] = useState<ExchangeSelection | null>(null);
   const activeSelection = selection?.exchange.sessionId === sessionId ? selection : null;
   const selected = activeSelection?.exchange;
@@ -250,9 +249,7 @@ export default function App() {
   const [view, setView] = useState<View>('traffic');
   const [panel, setPanel] = useState<Panel>(null);
   const [query, setQuery] = useState('');
-  const [searchError, setSearchError] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [limit, setLimit] = useState(250);
+  const [statusFilter, setStatusFilter] = useState<TrafficFilter>('all');
   const [busy, setBusy] = useState('');
   const [replayingId, setReplayingId] = useState('');
   const [loading, setLoading] = useState(isNative());
@@ -276,6 +273,14 @@ export default function App() {
     .sort()
     .join('|');
   const native = isNative();
+  const traffic = useTrafficPages({
+    native,
+    sessionId,
+    query,
+    filter: statusFilter,
+    snapshot: JSON.stringify([count, revision, pendingSignature]),
+  });
+  const exchanges = traffic.rows;
 
   useEffect(() => {
     // Polling reports listener state, not the user's next-listener preference.
@@ -352,32 +357,10 @@ export default function App() {
   useEffect(() => {
     sessionIdRef.current = sessionId;
     setSelection(null);
-    setExchanges([]);
-    setSearchError('');
-    setLimit(250);
     setAnalysis(null);
     setComparison(null);
     setCompareId((current) => (current === sessionId ? '' : current));
   }, [sessionId]);
-  useEffect(() => {
-    if (!native || !sessionId) return;
-    let alive = true;
-    const timer = window.setTimeout(
-      () => {
-        queryTraffic(sessionId, query, limit).then(({ rows, error }) => {
-          if (alive) {
-            setExchanges(rows);
-            setSearchError(error);
-          }
-        });
-      },
-      query ? 220 : 0,
-    );
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [native, sessionId, query, count, revision, pendingSignature, limit]);
   useEffect(() => {
     if (view !== 'analysis' || !sessionId || !native) return;
     let alive = true;
@@ -532,14 +515,6 @@ export default function App() {
       );
     }
   }
-  const filtered = exchanges.filter(
-    (e) =>
-      statusFilter === 'all' ||
-      (statusFilter === 'errors' && isExchangeError(e)) ||
-      (statusFilter === '2xx' && (e.status ?? 0) >= 200 && (e.status ?? 0) < 300) ||
-      (statusFilter === 'edited' && e.edited),
-  );
-  const requestCount = exchanges.length;
   const totalSize = exchanges.reduce((n, e) => n + e.requestBytes + e.responseBytes, 0);
   const runMcp = (
     ids: string[],
@@ -1002,11 +977,11 @@ export default function App() {
                   <select
                     className="status-select"
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    onChange={(e) => setStatusFilter(e.target.value as TrafficFilter)}
                     aria-label="Filter status"
                   >
                     <option value="all">All traffic</option>
-                    <option value="2xx">Successful</option>
+                    <option value="successful">Successful</option>
                     <option value="errors">Errors</option>
                     <option value="edited">Edited</option>
                   </select>
@@ -1049,9 +1024,9 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-                <TrafficSearchHelp error={searchError} onSelect={setQuery} />
+                <TrafficSearchHelp error={traffic.error} onSelect={setQuery} />
                 <div className={`traffic-split ${selected ? 'has-selection' : ''}`}>
-                  <div className="traffic-table-wrap">
+                  <div className="traffic-table-wrap" aria-busy={traffic.loading}>
                     <table className="traffic-table">
                       <thead>
                         <tr>
@@ -1065,7 +1040,7 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filtered.map((row) => {
+                        {exchanges.map((row) => {
                           const url = safeUrl(row.url);
                           const isPaused = pending.some((p) => p.exchangeId === row.id);
                           return (
@@ -1109,7 +1084,10 @@ export default function App() {
                         })}
                       </tbody>
                     </table>
-                    {!filtered.length && (
+                    {traffic.loading && !exchanges.length && (
+                      <p className="quiet-note">Loading traffic…</p>
+                    )}
+                    {!traffic.loading && !exchanges.length && (
                       <Empty
                         icon={
                           query || statusFilter !== 'all' ? (
@@ -1165,9 +1143,13 @@ export default function App() {
                         )}
                       </Empty>
                     )}
-                    {exchanges.length >= limit && (
-                      <button className="load-more" onClick={() => setLimit((n) => n + 250)}>
-                        Load 250 more requests
+                    {traffic.hasMore && (
+                      <button
+                        className="load-more"
+                        disabled={traffic.loading}
+                        onClick={traffic.loadMore}
+                      >
+                        {traffic.loading ? 'Loading traffic…' : 'Load more requests'}
                       </button>
                     )}
                   </div>
@@ -1189,7 +1171,10 @@ export default function App() {
                     {proxy.running ? 'Capturing' : 'Idle'}
                   </span>
                   <span>
-                    {filtered.length} shown{count > requestCount ? ` of ${count}` : ''}
+                    {exchanges.length} shown
+                    {!query && statusFilter === 'all' && count > exchanges.length
+                      ? ` of ${count}`
+                      : ''}
                   </span>
                   <span>{bytes(totalSize)} loaded</span>
                   <span className="footer-right">

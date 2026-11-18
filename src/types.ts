@@ -37,6 +37,11 @@ export interface Exchange {
   originalRequest?: unknown;
   originalResponse?: unknown;
 }
+export type TrafficFilter = 'all' | 'successful' | 'errors' | 'edited';
+export interface ExchangePage {
+  rows: Exchange[];
+  nextCursor: string | null;
+}
 export interface ProxyStatus {
   running: boolean;
   port: number;

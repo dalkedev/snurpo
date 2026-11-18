@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   device_status: vi.fn(),
   proxy_status: vi.fn(),
   pending: vi.fn(),
-  list_exchanges: vi.fn(),
+  list_exchange_page: vi.fn(),
   get_exchange: vi.fn(),
 }));
 vi.mock('./api', () => ({ isNative: () => true, api: mocks }));
@@ -61,7 +61,7 @@ beforeEach(() => {
   mocks.device_status.mockResolvedValue(device);
   mocks.proxy_status.mockResolvedValue(proxy);
   mocks.pending.mockResolvedValue([]);
-  mocks.list_exchanges.mockResolvedValue([request, other]);
+  mocks.list_exchange_page.mockResolvedValue({ rows: [request, other], nextCursor: null });
 });
 
 it('waits for the captured request body before enabling cURL and replay', async () => {

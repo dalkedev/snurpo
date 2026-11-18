@@ -12,9 +12,11 @@ import type {
   DeviceStatus,
   EditMessage,
   Exchange,
+  ExchangePage,
   PendingExchange,
   ProxyStatus,
   Session,
+  TrafficFilter,
 } from './types';
 export const isNative = () => '__TAURI_INTERNALS__' in window;
 async function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
@@ -41,6 +43,13 @@ export const api = {
     call<Session>('create_session', { name, source }),
   list_exchanges: (sessionId: string, query?: string, limit = 500, offset = 0) =>
     call<Exchange[]>('list_exchanges', { sessionId, query: query || undefined, limit, offset }),
+  list_exchange_page: (
+    sessionId: string,
+    query: string,
+    filter: TrafficFilter,
+    limit: number,
+    before: string | null,
+  ) => call<ExchangePage>('list_exchange_page', { sessionId, query, filter, limit, before }),
   get_exchange: (id: string) => call<Exchange>('get_exchange', { id }),
   analysis: (sessionId: string) => call<Analysis>('analysis', { sessionId }),
   save_export: (sessionId: string, format: 'har' | 'scope' | 'openapi', redact = false) =>
