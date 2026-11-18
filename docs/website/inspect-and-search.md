@@ -33,9 +33,9 @@ Quote values containing spaces. Inside quotes, `\"` represents a quote and `\\` 
 
 `state=error` means a completed exchange with a recorded error or HTTP status at least 400. `state=complete` excludes those errors. A missing status matches none of the status operators, including `!=`.
 
-## Two filters, different reach
+## Combine search with a status filter
 
-Structured conditions apply before pagination across the selected archive session. The **All traffic / Successful / Errors / Edited** dropdown filters the currently returned page.
+The search and the **All traffic / Successful / Errors / Edited** dropdown both apply across the selected archive session before pagination. **Load more requests** appears while there are older matches.
 
 To search literal text beginning with a reserved prefix, use:
 

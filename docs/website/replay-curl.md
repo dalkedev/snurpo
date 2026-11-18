@@ -2,6 +2,8 @@
 
 Snurpo offers two ways to reuse a captured request. **Compose replay** sends a new exchange from Snurpo. **Copy as cURL** prepares a command for your terminal. Opening either editor does not send the request.
 
+Both actions become available once the inspector loads the complete exchange. If the read fails, use **Retry loading details** in the inspector.
+
 ## Compose a replay
 
 1. Select the captured exchange and choose **Compose replay**.

@@ -13,7 +13,7 @@ Capture, saved sessions, export and built-in analysis work without an account or
 
 ![Snurpo's native traffic inspector showing captured requests and response details.](/assets/traffic-inspector.webp)
 
-This native screenshot records Snurpo 1.4.2. The guides describe 1.5.0, which adds Copy as cURL.
+This native screenshot records Snurpo 1.4.2. The guides describe 1.5.1.
 
 ## Choose the next question
 

@@ -2,6 +2,14 @@
 
 User-visible changes are recorded here. Back up important captures before upgrading.
 
+## 1.5.1
+
+- Wait for the full captured request before enabling Copy as cURL or Compose
+  replay. Show a retry when the archive read fails.
+- Apply the status dropdown and search to the selected session before pagination.
+  Load older matching requests beyond the previous 1,000-row limit.
+- Clarify the first-capture command for Windows PowerShell 5.1.
+
 ## 1.5.0: 2026-11-12
 
 - Preview and copy a captured request as a POSIX-shell cURL command, preserving

@@ -30,7 +30,7 @@
   <a href="https://snurpo.dev"><img src="assets/brand/snurpo-sign.png" alt="Snurpo holding a snurpo.dev sign. Visit the website." width="360"></a>
 </p>
 
-> **Snurpo 1.5.0: take a captured request to your terminal.** Select **Copy as cURL** to preview and explicitly copy a POSIX-shell command, including repeated headers and text or binary bodies. Previewing and copying send no traffic. [Downloads](https://github.com/dalkedev/snurpo/releases/tag/v1.5.0) · [Release notes](docs/releases/1.5.0.md) · [Terminal export and limits](docs/GETTING_STARTED.md#copy-a-request-to-your-terminal). Saved sessions, certificate trust and MCP configuration remain compatible. Source tooling uses Node 26.13.1 LTS; the installed desktop app needs no Node runtime. The existing gallery records Snurpo 1.4.2; see its [capture provenance](docs/images/README.md).
+> **Snurpo 1.5.1: complete requests and full-session filters.** Copy as cURL and Compose replay wait for the captured request details. Traffic filters apply before pagination, so older matching requests remain accessible. [Downloads](https://github.com/dalkedev/snurpo/releases/latest) · [Release notes](docs/releases/1.5.1.md) · [Terminal export and limits](docs/GETTING_STARTED.md#copy-a-request-to-your-terminal). Saved sessions, certificate trust and MCP configuration remain compatible. Source tooling uses Node 26.13.1 LTS; the installed desktop app needs no Node runtime. The existing gallery records Snurpo 1.4.2; see its [capture provenance](docs/images/README.md).
 
 <a href="docs/SCREENSHOTS.md"><img src="docs/images/snurpo/mocked-response.jpg" alt="Real captured traffic: a products request returns a local HTTP 503 mock, with its rule and response JSON visible." width="100%"></a>
 
