@@ -32,7 +32,12 @@
 
 > **Snurpo 1.5.1: complete requests and full-session filters.** Copy as cURL and Compose replay wait for the captured request details. Traffic filters apply before pagination, so older matching requests remain accessible. [Downloads](https://github.com/dalkedev/snurpo/releases/latest) · [Release notes](docs/releases/1.5.1.md) · [Terminal export and limits](docs/GETTING_STARTED.md#copy-a-request-to-your-terminal). Saved sessions, certificate trust and MCP configuration remain compatible. Source tooling uses Node 26.13.1 LTS; the installed desktop app needs no Node runtime. The existing gallery records Snurpo 1.4.2; see its [capture provenance](docs/images/README.md).
 
-<a href="docs/SCREENSHOTS.md"><img src="docs/images/snurpo/mocked-response.jpg" alt="Real captured traffic: a products request returns a local HTTP 503 mock, with its rule and response JSON visible." width="100%"></a>
+<a href="docs/SCREENSHOTS.md">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/images/snurpo/snurpo-demo.webp">
+    <img src="docs/images/snurpo/snurpo-demo.gif" alt="Snurpo highlights a sign-in request among six localhost exchanges, shows its HTTP 401 response body and opens the cURL command." width="100%">
+  </picture>
+</a>
 
 ## Follow a request all the way through
 

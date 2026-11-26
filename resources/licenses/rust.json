@@ -1,6 +1,6 @@
 {
   "generator": "cargo-about 0.9.3; scripts/licenses.mjs",
-  "lockfileSha256": "f92adfe388ccf54ade42496a000f9d087610ce6fe6f17dfd557bfc2a5097c181",
+  "lockfileSha256": "c7a42e9159bbf4e3032c039f63a96c91f97aaffafb3a09d692509ec53bbe1cd8",
   "scope": "Workspace runtime dependencies across supported target configurations; build and dev dependencies excluded. Includes target-specific crates not necessarily present in each artifact.",
   "licenses": [
     {
@@ -954,13 +954,13 @@
       "packages": [
         {
           "name": "form_urlencoded",
-          "version": "1.2.2",
+          "version": "1.2.3",
           "license": "MIT OR Apache-2.0",
           "repository": "https://github.com/servo/rust-url",
           "authors": [
             "The rust-url developers"
           ],
-          "source": "https://crates.io/crates/form_urlencoded/1.2.2"
+          "source": "https://crates.io/crates/form_urlencoded/1.2.3"
         }
       ]
     },
@@ -991,13 +991,13 @@
         },
         {
           "name": "url",
-          "version": "2.5.8",
+          "version": "2.5.9",
           "license": "MIT OR Apache-2.0",
           "repository": "https://github.com/servo/rust-url",
           "authors": [
             "The rust-url developers"
           ],
-          "source": "https://crates.io/crates/url/2.5.8"
+          "source": "https://crates.io/crates/url/2.5.9"
         }
       ]
     },
@@ -2259,14 +2259,14 @@
       "packages": [
         {
           "name": "cookie",
-          "version": "0.18.2",
+          "version": "0.18.3",
           "license": "MIT OR Apache-2.0",
           "repository": "https://github.com/SergioBenitez/cookie-rs",
           "authors": [
             "Sergio Benitez <sb@sergio.bz>",
             "Alex Crichton <alex@alexcrichton.com>"
           ],
-          "source": "https://crates.io/crates/cookie/0.18.2"
+          "source": "https://crates.io/crates/cookie/0.18.3"
         }
       ]
     },
