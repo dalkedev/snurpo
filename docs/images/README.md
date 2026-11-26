@@ -1,5 +1,14 @@
 # Screenshot provenance
 
+## Snurpo 1.5.1 animated walkthrough
+
+The [README demo](snurpo/snurpo-demo.gif) follows the built-in localhost fixture.
+The packaged 1.5.1 engine generated six requests in a fresh session. The 1.5.1
+frontend displayed the saved exchanges in Chromium through a read-only capture
+adapter. The sequence shows the traffic table, the sign-in response body and
+the Copy as cURL preview. The [still frame](snurpo/snurpo-demo.webp) is used
+when the viewer prefers reduced motion.
+
 ## Current Snurpo 1.4.2 captures: 12 November 2026
 
 These are original JPEG captures of the running native macOS arm64 Snurpo 1.4.2
